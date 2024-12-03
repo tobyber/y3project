@@ -88,7 +88,6 @@
     <None Include="shader\shader.vert" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Ray.cu" />
     <ClCompile Include="shaders\Shader.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -106,7 +105,9 @@
     <ClInclude Include="helper_string.h" />
     <ClInclude Include="Ray.h" />
     <ClInclude Include="shaders\Shader.h" />
+    <ClInclude Include="Sphere.h" />
     <ClInclude Include="vec3gpu.h" />
+    <ClInclude Include="World.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

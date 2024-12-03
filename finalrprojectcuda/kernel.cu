@@ -22,7 +22,9 @@
 #include <stdio.h>
 #include <iostream>
 #include "vec3gpu.h"
-
+#include "Ray.h"
+#include "Sphere.h"
+#include "World.h"
 
 
 __device__ void renderRay(float4* pos, vec3gpu cameraPos, float x, float y, float width, float height, float left, float right, float top, float bottom);
@@ -30,7 +32,7 @@ __device__ void renderRay(float4* pos, vec3gpu cameraPos, float x, float y, floa
 
 
 
-__global__ void addKernel(float4* pos, int screen_width, int screen_height, float time)
+__global__ void addKernel(float4* pos, int screen_width, int screen_height)
 {
 	int x = blockIdx.x * blockDim.x + threadIdx.x;
 	int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -43,21 +45,31 @@ __global__ void addKernel(float4* pos, int screen_width, int screen_height, floa
 	
 	//Ray r();
 	vec3gpu thing();
+	World w;
+	Sphere s(vec3gpu(0, 1, 3), 1.0, make_float4(1.0, 1.0, 0.0, 1.0));
+	w.AddSphere(s);
 
-	renderRay(pos, vec3gpu(0, 0, 0), (float)x, (float)y, (float)screen_width, (float)screen_height, -1.0f, 1.0f, 1.0f, -1.0f);
+
+
+	Ray r(pos, vec3gpu(0, 0, 0), (float)x, (float)y, (float)screen_width, (float)screen_height, -1.0f, 1.0f, 1.0f, -1.0f);
+
+	float4 col = w.hitSpheres(r, float(x), float(y));
+	pos[y * screen_width + x] = col;
+
+
 
 	//pos[y*screen_width+x] = make_float4(r_col, g_col, z, z);
-	float test = 0.8f;
-	float r_col = sin(time / (float)screen_width);
-	float g_col = sin(time / (float)screen_height);
-	float z = 1.0;
+	//float test = 0.8f;
+	//float r_col = sin(time / (float)screen_width);
+	//float g_col = sin(time / (float)screen_height);
+	//float z = 1.0;
 	//pos[y*screen_width+x] = make_float4(r_col, g_col, z, z);
 	
 }
 
 
 
-float time_f = 0;
+int prevTime = 0;
 int window_width = 480;
 int window_height = 480;
 
@@ -97,43 +109,18 @@ void idle();		//idle function
 //https://github.com/Forceflow/cuda2GLcore/blob/main/src/main.cpp - memcpy into the texture instead?
 
 
+//__device__ vec3gpu hitSphere(vec3gpu origin, vec3gpu dir, vec3gpu Center, float radius);
+
+
 
 __device__ void renderRay(float4* pos, vec3gpu cameraPos, float x, float y, float width, float height, float left, float right, float top, float bottom)
 {
 
-	//Ray ray(cameraPos,vec3gpu());
-	vec3gpu origin(cameraPos);
-
-	//IMAGE PLANE = [-1,1]
-	//
-	//get pixel size from plane size,given that aspect ratio is 1:1
-	float pixelSize = 2 / width;
-
-	//u,v are the vectors in world coordinates, i think
-	float u = left + ((x + 0.5) * pixelSize);
-	float v = bottom + ((y + 0.5) * pixelSize);
-	//given camera is aligned to axes.
-	vec3gpu dir;
-	dir.x = u * 1;
-	dir.y = v * 1;
-	//direction goes foward since plane is at z = 1;
-	dir.z = 1.0;
-
-
-	vec3gpu spot(u, v, 1.0f);
-
-	dir = (spot - origin);
-
-	vec3gpu unNormdir(spot - origin);
-
-	unNormdir.normalise();
 	
-	dir = unNormdir;
+	//sphere intersection
 
-	if (dir.z * 3 >= 2.5f) return;
-
-
-	pos[(int)y * (int)width + (int)x] = make_float4(u, v, 1.0, 1.0);
+	
+	//pos[(int)y * (int)width + (int)x] = make_float4(col, 0.0, 0.0, 1.0);
 
 
 }
@@ -152,10 +139,10 @@ void display()
 		cuda_tex_resource));
 	dim3 block(16, 16, 1);
 	dim3 grid(window_width / block.x, window_height / block.y, 1);
-	addKernel<<<grid, block >>>(data_ptr, window_width, window_height,time_f);
+	addKernel<<<grid, block >>>(data_ptr, window_width, window_height);
 
-	float test = time_f / (float)window_width;
-	std::cout << test << std::endl;
+	//float test = time_f / (float)window_width;
+	//std::cout << test << std::endl;
 	cudaGraphicsUnmapResources(1, &cuda_tex_resource, 0);
 	
 
@@ -194,10 +181,11 @@ void display()
 
 
 	glDrawArrays(GL_TRIANGLES, 0, 6);
-	
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
-	if (time_f >= 460) time_f = 0;
-	time_f += 5.0;
+//	if (time_f >= 460) time_f = 0;
+	//time_f += 5.0;
 	glFlush();
 	glutSwapBuffers();
 }
@@ -240,7 +228,7 @@ void init()
 	//gluPerspective(60, window_width / window_height, 0.1, 1);
 	glOrtho(-1.0,window_width,-1.0,window_height,-1.0,1.0);
 
-
+	prevTime = glutGet(GLUT_ELAPSED_TIME);
 
 
 
@@ -257,6 +245,15 @@ void init()
 
 void idle()
 {
+
+	int curTime = glutGet(GLUT_ELAPSED_TIME);
+
+	int dt = curTime - prevTime;
+
+	//std::cout << dt << std::endl;
+
+	prevTime = curTime;
+
 	glutPostRedisplay();
 
 }

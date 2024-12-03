@@ -1,3 +1,6 @@
+#pragma once
+
+
 
 #include "GL\glew.h"
 #include "GL\wglew.h"
@@ -21,26 +24,28 @@
 #include <stdio.h>
 #include <iostream>
 #include "vec3gpu.h"
-#include "Ray.h"
 
 
-	__device__ Ray::Ray()
+
+class Sphere
+{
+public:
+	vec3gpu Center;
+	float Radius;
+	float4 Colour;
+
+
+	__device__ Sphere() {}
+
+
+	__device__ Sphere(vec3gpu center, float radius,float4 colour)
 	{
-		this->dir = vec3gpu();
-		this->origin = vec3gpu();
+		this->Center = center;
+		this->Radius = radius;
+		this->Colour = colour;
 	}
 
-	__device__ Ray::Ray(vec3gpu origin, vec3gpu direction)
-	{
-		this->dir = direction;
-		this->origin = origin;
-
-
-	}
-	
 
 
 
-
-
-
+};
