@@ -25,6 +25,7 @@
 #include "Ray.h"
 #include "Sphere.h"
 #include "World.h"
+#include "Light.h"
 
 
 __device__ void renderRay(float4* pos, vec3gpu cameraPos, float x, float y, float width, float height, float left, float right, float top, float bottom);
@@ -34,11 +35,26 @@ __device__ void renderRay(float4* pos, vec3gpu cameraPos, float x, float y, floa
 
 __global__ void addKernel(float4* pos, int screen_width, int screen_height)
 {
+
+
+
+
+
+
+
+
 	int x = blockIdx.x * blockDim.x + threadIdx.x;
 	int y = blockIdx.y * blockDim.y + threadIdx.y;
 
 	if (y > screen_height || x > screen_width) return;
 	
+	//setup light positions
+
+	//pass light positions to shading?
+
+
+
+
 
 	//Ray r(	vec3(0, 0, 0), vec3(x / (float)screen_width, y / (float)screen_height, -1.0)	);
 	//render_ray(pos, vec3(0,0,0), (float)x, (float)y, (float)screen_width, (float)screen_height, -1.0f, 1.0f, 1.0f, -1.0f);
@@ -46,12 +62,20 @@ __global__ void addKernel(float4* pos, int screen_width, int screen_height)
 	//Ray r();
 	vec3gpu thing();
 	World w;
-	Sphere s(vec3gpu(0, 1, 3), 1.0, make_float4(1.0, 1.0, 0.0, 1.0));
-	w.AddSphere(s);
+	Light l1(vec3gpu(0, 0, 0), make_float4(1.0, 1.0, 1.0, 1.0));
+	Sphere s1(vec3gpu(1, 1, 2), 0.5, make_float4(0.0, 1.0, 0.0, 1.0));
+	Sphere s(vec3gpu(0, 1, 2), 1.0, make_float4(1.0, 1.0, 1.0, 1.0));
+	Sphere s2(vec3gpu(-1, 1, 2), 0.5, make_float4(1.0, 0.0, 0.0, 1.0));
+	
 
+	//spheres dont show if added after light?
+	//w.AddSphere(s);
+	w.AddSphere(s2);
+	w.AddSphere(s1);
+	w.AddLight(l1);
+	
 
-
-	Ray r(pos, vec3gpu(0, 0, 0), (float)x, (float)y, (float)screen_width, (float)screen_height, -1.0f, 1.0f, 1.0f, -1.0f);
+	Ray r(pos, vec3gpu(0, 0, 0), (float)x, (float)y, (float)screen_width, (float)screen_height, -1.0f, 1.0f, -1.0f, 1.0f);
 
 	float4 col = w.hitSpheres(r, float(x), float(y));
 	pos[y * screen_width + x] = col;
@@ -72,6 +96,8 @@ __global__ void addKernel(float4* pos, int screen_width, int screen_height)
 int prevTime = 0;
 int window_width = 480;
 int window_height = 480;
+int f_count = 0;
+
 
 
 size_t num_bytes = (window_width * window_height) * 4 * sizeof(float);
@@ -249,11 +275,12 @@ void idle()
 	int curTime = glutGet(GLUT_ELAPSED_TIME);
 
 	int dt = curTime - prevTime;
-
-	//std::cout << dt << std::endl;
+	f_count++;
+	std::cout << dt << ',';
 
 	prevTime = curTime;
 
+	
 	glutPostRedisplay();
 
 }

@@ -28,7 +28,7 @@ class Ray
 public:
 	__device__ Ray() {this->dir = vec3gpu();	this->origin = vec3gpu(); }
 	__device__ Ray(vec3gpu origin, vec3gpu direction) {	this->dir = direction;	this->origin = origin;}
-	__device__ Ray(float4* pos, vec3gpu cameraPos, float x, float y, float width, float height, float left, float right, float top, float bottom)
+	__device__ Ray(float4* pos, vec3gpu cameraPos, float x, float y, float width, float height, float left, float right, float bottom, float top)
 	{
 		//Ray ray(cameraPos,vec3gpu());
 		this->origin = cameraPos;
@@ -51,7 +51,7 @@ public:
 
 		vec3gpu spot(u, v, 1.0f);
 
-		ldir = (spot - this->origin);
+		//ldir = (spot - this->origin);
 
 		vec3gpu unNormdir(spot - this->origin);
 
