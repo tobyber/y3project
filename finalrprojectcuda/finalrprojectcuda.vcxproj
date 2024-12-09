@@ -104,6 +104,7 @@
     <ClInclude Include="helper_gl.h" />
     <ClInclude Include="helper_string.h" />
     <ClInclude Include="Light.h" />
+    <ClInclude Include="Model.h" />
     <ClInclude Include="Ray.h" />
     <ClInclude Include="shaders\Shader.h" />
     <ClInclude Include="Sphere.h" />

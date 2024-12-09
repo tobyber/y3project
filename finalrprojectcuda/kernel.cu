@@ -26,6 +26,7 @@
 #include "Sphere.h"
 #include "World.h"
 #include "Light.h"
+#include "Model.h"
 
 
 __device__ void renderRay(float4* pos, vec3gpu cameraPos, float x, float y, float width, float height, float left, float right, float top, float bottom);
@@ -221,12 +222,33 @@ void init()
 {
 
 
+
+	Model m1("ImageToStl.stl");
+
+	/*
+	for (int i = 0; i < m1.NUMBER_OF_TRIANGLES; i++)
+	{
+		std::cout << "Triangle: " << i << std::endl;
+		std::cout << "Normal:" << m1.triangles[4 * i + 0].x << std::endl;
+		std::cout << "Vert 1:" << m1.triangles[4 * i + 1].x << std::endl;
+		std::cout << "Vert 2:" << m1.triangles[4 * i + 2].x << std::endl;
+		std::cout << "Vert 3:" << m1.triangles[4 * i + 3].x << std::endl;
+			
+
+
+	}
+	*/
+
+
 	//create shader
 	myShader = new CShader();
 	if (!myShader->CreateShaderProgram("basic", "shader/shader.vert", "shader/shader.frag"))
 	{
 		std::cout << "failed to load shader" << std::endl;
 	}
+
+
+
 
 	//gen buffers and textures for output
 	glEnable(GL_TEXTURE_2D);
