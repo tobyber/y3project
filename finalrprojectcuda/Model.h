@@ -35,6 +35,85 @@ struct vec3 {
 	float z;
 };
 
+
+
+
+
+__device__ float4 testIntersect(Ray r, vec3gpu *triangles, UINT32 NUMBER_OF_TRIANGLES)
+{
+
+
+	for (int i = 0; i < NUMBER_OF_TRIANGLES; i++)
+	{
+		vec3gpu edge1, edge2, p;
+		float det;
+		//0,1,2,3
+		vec3gpu vert0 = triangles[4 * i + 1];
+		vec3gpu vert1 = triangles[4 * i + 2];
+		vec3gpu vert2 = triangles[4 * i + 3];
+
+
+		vert0.z =  7.0f;
+		vert1.z =  7.0f;
+		vert2.z =  7.0f;
+
+
+
+		
+		edge1 = (vert1 - vert0);
+		edge2 = (vert2 - vert0);
+		p = r.dir.cross(edge2);
+
+
+		//required for culling
+		det = edge1.dot(p);
+
+
+		//currently doing non culling
+		float EPSILON = FLT_EPSILON;
+
+		//if det near 0, then parallel so cant intersect
+		if (det > -EPSILON && det < EPSILON) return make_float4(0.0, 0.0, 0.0, 1.0);
+		float inv_det = 1.0f / det;
+
+		vec3gpu tvec = r.origin - vert0;
+
+		
+
+		float u = (tvec.dot(p)) * inv_det;
+
+		// u + v + t = 1
+		if (u < 0.0f || u > 1.0f) return make_float4(0.0, 0.0, 0.0, 1.0);
+
+		vec3gpu q = tvec.cross(edge1);	
+
+		float v = (r.dir.dot(q)) * inv_det;
+
+		// u + v + t = 1
+		if (v < 0.0f || v + u > 1.0f) return make_float4(0.0, 0.0, 0.0, 1.0);
+
+		float t = (edge2.dot(q)) * inv_det;
+
+		if (t > EPSILON) return make_float4(1.0, 0.0, 0.0, 1.0);
+		
+		//intersection behind image
+		return make_float4(0.0, 0.0, 0.0, 1.0);
+
+	}
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
 class Model
 {
 
@@ -43,13 +122,27 @@ public:
 
 
 	UINT32 NUMBER_OF_TRIANGLES;
+	UINT32 NUMBER_OF_VECTORS;
 	static const int VECTORS_PER_TRIANGLE = 4;
 	static const int FLOATS_PER_VECTOR = 3;
 	static const int SIZE_OF_FLOAT = 4;
 
-	vec3* triangles;
+	vec3gpu* triangles;
 
 
+	__device__ Model(vec3gpu* triangles, UINT32 NUMBER_OF_TRIANGLES)
+	{
+		this->triangles = triangles;
+		this->NUMBER_OF_TRIANGLES = NUMBER_OF_TRIANGLES;
+		this->NUMBER_OF_VECTORS = NUMBER_OF_TRIANGLES * 4;
+	}
+
+
+
+	__host__ __device__ Model() {}
+
+
+	
 
 
 	__host__ Model(std::string filePath)
@@ -72,7 +165,8 @@ public:
 		std::cout << NUMBER_OF_TRIANGLES << std::endl;
 
 		this->NUMBER_OF_TRIANGLES = NUMBER_OF_TRIANGLES;
-		this->triangles = new vec3[NUMBER_OF_TRIANGLES*4];
+		this->NUMBER_OF_VECTORS = NUMBER_OF_TRIANGLES * 4;
+		this->triangles = new vec3gpu[NUMBER_OF_TRIANGLES*4];
 
 
 		
@@ -82,27 +176,24 @@ public:
 
 
 
-		for (UINT32 i = 0; i < NUMBER_OF_TRIANGLES; i++)
+		for (int i = 0; i < NUMBER_OF_TRIANGLES; i++)
 		{
 
 			for (int j = 0; j < VECTORS_PER_TRIANGLE; j++)
 			{
-				for (int k = 0; k < 3; k++)
+				for (int k = 0; k < FLOATS_PER_VECTOR; k++)
 				{
 
 					for (int l = 0; l < SIZE_OF_FLOAT; l++)
 					{
 						vectorBuff[l] = modelFile.get();
 					}
-					if (k == 0 ) memcpy(&floatX, vectorBuff, sizeof(vectorBuff));
-					if (k == 1) memcpy(&floatY, vectorBuff, sizeof(vectorBuff));
-					if (k == 1) memcpy(&floatZ, vectorBuff, sizeof(vectorBuff));
-				}
-				vec3 v1;	
-				v1.x = floatX;
-				v1.y = floatY;
-				v1.z = floatZ;
-				triangles[i+j] = v1;
+					if (k == 0) std::memcpy(&floatX, &vectorBuff, sizeof(vectorBuff));
+					if (k == 1) std::memcpy(&floatY, &vectorBuff, sizeof(vectorBuff));
+					if (k == 2) std::memcpy(&floatZ, &vectorBuff, sizeof(vectorBuff));
+				}	
+				vec3gpu v1(floatX, floatY, floatZ);
+				triangles[ (4*i) +j] = v1;
 		
 			}
 
@@ -114,6 +205,19 @@ public:
 		}
 
 	}
+
+	__host__ vec3gpu* copyTrisToGPU()
+	{
+		vec3gpu *m1;
+		size_t size = sizeof(vec3gpu)*NUMBER_OF_TRIANGLES*4;
+		checkCudaErrors(cudaMalloc((void**)&m1, size));
+		checkCudaErrors(cudaMemcpy(m1,triangles,size, cudaMemcpyHostToDevice));
+		return m1;
+
+	}
+
+
+
 
 
 };

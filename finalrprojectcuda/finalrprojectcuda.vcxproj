@@ -84,6 +84,9 @@
     <CudaCompile Include="vec3gpu.cu" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="D:\Users\Toby Bernard\Downloads\ImageToStl.com_cottage_obj\ImageToStl.com_cottage_obj.stl" />
+    <None Include="D:\Users\Toby Bernard\Downloads\top.stl" />
+    <None Include="ImageToStl.stl" />
     <None Include="shader\shader.frag" />
     <None Include="shader\shader.vert" />
   </ItemGroup>

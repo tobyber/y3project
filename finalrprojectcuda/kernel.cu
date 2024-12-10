@@ -34,7 +34,7 @@ __device__ void renderRay(float4* pos, vec3gpu cameraPos, float x, float y, floa
 
 
 
-__global__ void addKernel(float4* pos, int screen_width, int screen_height)
+__global__ void addKernel(float4* pos, int screen_width, int screen_height,vec3gpu* modelTris ,UINT32 modelTrisNo)
 {
 
 
@@ -64,23 +64,38 @@ __global__ void addKernel(float4* pos, int screen_width, int screen_height)
 	vec3gpu thing();
 	World w;
 	Light l1(vec3gpu(0, 0, 0), make_float4(1.0, 1.0, 1.0, 1.0));
-	Sphere s1(vec3gpu(1, 1, 2), 0.5, make_float4(0.0, 1.0, 0.0, 1.0));
+	//Sphere s1(vec3gpu(1, 1, 2), 0.5, make_float4(0.0, 1.0, 0.0, 1.0));
 	Sphere s(vec3gpu(0, 1, 2), 1.0, make_float4(1.0, 1.0, 1.0, 1.0));
-	Sphere s2(vec3gpu(-1, 1, 2), 0.5, make_float4(1.0, 0.0, 0.0, 1.0));
+	//Sphere s2(vec3gpu(-1, 1, 2), 0.5, make_float4(1.0, 0.0, 0.0, 1.0));
 	
 
+	//w.AddModel(m2);
+	
 	//spheres dont show if added after light?
-	//w.AddSphere(s);
-	w.AddSphere(s2);
-	w.AddSphere(s1);
+	w.AddSphere(s);
+	//w.AddSphere(s2);
+	//w.AddSphere(s1);
 	w.AddLight(l1);
+	
+
 	
 
 	Ray r(pos, vec3gpu(0, 0, 0), (float)x, (float)y, (float)screen_width, (float)screen_height, -1.0f, 1.0f, -1.0f, 1.0f);
 
-	float4 col = w.hitSpheres(r, float(x), float(y));
-	pos[y * screen_width + x] = col;
+	
+	
+	//float4 col = w.hitSpheres(r, float(x), float(y));
+	
 
+
+	float4 col2 = testIntersect(r, modelTris, modelTrisNo);
+	//col.x = col.x + col2.x;
+	//col.y = col.y + col2.y;
+	//col.z = col.z + col2.z;
+
+	pos[y * screen_width + x] = col2;
+
+	
 
 
 	//pos[y*screen_width+x] = make_float4(r_col, g_col, z, z);
@@ -107,7 +122,8 @@ cudaDeviceProp deviceProp;
 GLuint vao;
 GLuint vbo;
 GLuint tex, buff;
-
+Model m1;
+vec3gpu *modelTrisGPU;
 
 cudaGraphicsResource* cuda_tex_resource;
 
@@ -159,14 +175,19 @@ void display()
 	
 	//generate texture data from cuda
 	float4* data_ptr;
-
 	
+	
+
+
 	checkCudaErrors(cudaGraphicsMapResources(1, &cuda_tex_resource, 0));
 	checkCudaErrors(cudaGraphicsResourceGetMappedPointer((void**)&data_ptr, &num_bytes,
 		cuda_tex_resource));
 	dim3 block(16, 16, 1);
 	dim3 grid(window_width / block.x, window_height / block.y, 1);
-	addKernel<<<grid, block >>>(data_ptr, window_width, window_height);
+	addKernel<<<grid, block >>>(data_ptr, window_width, window_height,modelTrisGPU,m1.NUMBER_OF_TRIANGLES);
+
+
+
 
 	//float test = time_f / (float)window_width;
 	//std::cout << test << std::endl;
@@ -223,7 +244,9 @@ void init()
 
 
 
-	Model m1("ImageToStl.stl");
+	m1 = Model("ImageToStl.com_cottage_obj.stl");
+	
+	modelTrisGPU = m1.copyTrisToGPU();
 
 	/*
 	for (int i = 0; i < m1.NUMBER_OF_TRIANGLES; i++)

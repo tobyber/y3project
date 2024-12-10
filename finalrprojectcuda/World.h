@@ -26,13 +26,14 @@
 #include "Sphere.h"
 #include "Ray.h"
 #include "Light.h"
+#include "Model.h"
 
 
 class World
 {
 	//spheres
 
-	//render?
+	//render?d
 
 public:
 
@@ -40,6 +41,7 @@ public:
 	static const int MAX_LIGHTS = 10;
 	Light Lights[MAX_LIGHTS];
 	Sphere Spheres[MAX_SPHERES];
+	Model* model;
 
 	__device__ World() 
 	{
@@ -62,6 +64,13 @@ public:
 		sphereIdx++;
 
 	}
+
+	__device__ void AddModel(Model* m1)
+	{
+		this->model = m1;
+
+	}
+
 
 
 
