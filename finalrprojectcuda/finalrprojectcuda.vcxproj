@@ -44,6 +44,10 @@
     <IncludePath>C:\Users\Toby Bernard\source\repos\finalrprojectcuda\finalrprojectcuda;C:\Users\Toby Bernard\source\repos\finalrprojectcuda\finalrprojectcuda\shaders;C:\Users\Toby Bernard\source\repos\finalrprojectcuda\finalrprojectcuda\glm;C:\Users\Toby Bernard\source\repos\finalrprojectcuda\finalrprojectcuda\GL;$(IncludePath)</IncludePath>
     <LibraryPath>C:\Users\Toby Bernard\source\repos\finalrprojectcuda\finalrprojectcuda\Libraries;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IncludePath>C:\Users\Toby Bernard\source\repos\finalrprojectcuda\finalrprojectcuda\Libraries;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\Toby Bernard\source\repos\finalrprojectcuda\finalrprojectcuda\Libraries;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -111,6 +115,7 @@
     <ClInclude Include="Ray.h" />
     <ClInclude Include="shaders\Shader.h" />
     <ClInclude Include="Sphere.h" />
+    <ClInclude Include="Triangle.h" />
     <ClInclude Include="vec3gpu.h" />
     <ClInclude Include="World.h" />
   </ItemGroup>

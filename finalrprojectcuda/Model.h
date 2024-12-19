@@ -26,6 +26,7 @@
 #include "Sphere.h"
 #include "Ray.h"
 #include "Light.h"
+#include "World.h"
 #include <vector>
 
 
@@ -37,75 +38,6 @@ struct vec3 {
 
 
 
-
-
-__device__ float4 testIntersect(Ray r, vec3gpu *triangles, UINT32 NUMBER_OF_TRIANGLES)
-{
-
-
-	for (int i = 0; i < NUMBER_OF_TRIANGLES; i++)
-	{
-		vec3gpu edge1, edge2, p;
-		float det;
-		//0,1,2,3
-		vec3gpu vert0 = triangles[4 * i + 1];
-		vec3gpu vert1 = triangles[4 * i + 2];
-		vec3gpu vert2 = triangles[4 * i + 3];
-
-
-		vert0.z =  7.0f;
-		vert1.z =  7.0f;
-		vert2.z =  7.0f;
-
-
-
-		
-		edge1 = (vert1 - vert0);
-		edge2 = (vert2 - vert0);
-		p = r.dir.cross(edge2);
-
-
-		//required for culling
-		det = edge1.dot(p);
-
-
-		//currently doing non culling
-		float EPSILON = FLT_EPSILON;
-
-		//if det near 0, then parallel so cant intersect
-		if (det > -EPSILON && det < EPSILON) return make_float4(0.0, 0.0, 0.0, 1.0);
-		float inv_det = 1.0f / det;
-
-		vec3gpu tvec = r.origin - vert0;
-
-		
-
-		float u = (tvec.dot(p)) * inv_det;
-
-		// u + v + t = 1
-		if (u < 0.0f || u > 1.0f) return make_float4(0.0, 0.0, 0.0, 1.0);
-
-		vec3gpu q = tvec.cross(edge1);	
-
-		float v = (r.dir.dot(q)) * inv_det;
-
-		// u + v + t = 1
-		if (v < 0.0f || v + u > 1.0f) return make_float4(0.0, 0.0, 0.0, 1.0);
-
-		float t = (edge2.dot(q)) * inv_det;
-
-		if (t > EPSILON) return make_float4(1.0, 0.0, 0.0, 1.0);
-		
-		//intersection behind image
-		return make_float4(0.0, 0.0, 0.0, 1.0);
-
-	}
-
-
-
-
-
-}
 
 
 
@@ -158,7 +90,7 @@ public:
 
 		UINT32 NUMBER_OF_TRIANGLES;
 
-		BYTE testbuf[4] = { modelFile.get(),modelFile.get(),modelFile.get(),modelFile.get() };
+		BYTE testbuf[4] = { modelFile.get(),modelFile.get() ,modelFile.get(),modelFile.get() };
 
 		memcpy(&NUMBER_OF_TRIANGLES, testbuf, sizeof(NUMBER_OF_TRIANGLES));
 
@@ -199,8 +131,9 @@ public:
 
 
 			//Two useless bytes at the end of each triangle
-			modelFile.get();
-			modelFile.get();
+			char c;
+			modelFile.get(c);
+			modelFile.get(c);
 
 		}
 
