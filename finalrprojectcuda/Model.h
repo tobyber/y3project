@@ -142,7 +142,7 @@ public:
 	__host__ vec3gpu* copyTrisToGPU()
 	{
 		vec3gpu *m1;
-		size_t size = sizeof(vec3gpu)*NUMBER_OF_TRIANGLES*4;
+		size_t size = sizeof(vec3gpu)*(int)NUMBER_OF_TRIANGLES*4;
 		checkCudaErrors(cudaMalloc((void**)&m1, size));
 		checkCudaErrors(cudaMemcpy(m1,triangles,size, cudaMemcpyHostToDevice));
 		return m1;

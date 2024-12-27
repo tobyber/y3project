@@ -28,7 +28,7 @@
 #include "Ray.h"
 #include "Light.h"
 #include "Model.h"
-
+#include <algorithm>
 
 class World
 {
@@ -46,9 +46,11 @@ public:
 
 	//std::vector<vec3gpu*> models;
 	Light Lights[MAX_LIGHTS];
-	Sphere Spheres[MAX_SPHERES];
+	Sphere* Spheres[MAX_SPHERES];
 	vec3gpu* modelTris[MAX_MODELS];
 	UINT32 modelTrisNo[MAX_MODELS];
+	float4 modelColours[MAX_MODELS];
+
 
 	__device__ World()
 	{
@@ -58,7 +60,7 @@ public:
 
 
 	//make it so cant do more than MAX
-	__device__ void AddSphere(Sphere sp1)
+	__device__ void AddSphere(Sphere* sp1)
 	{
 		this->Spheres[sphereIdx] = sp1;
 		sphereIdx++;
@@ -68,20 +70,21 @@ public:
 	__device__ void AddLight(Light l1)
 	{
 		this->Lights[lightSize] = l1;
-		sphereIdx++;
+		lightSize++;
 
 	}
 
-	__device__ void AddModel(vec3gpu* tris, UINT32 noTris)
+	__device__ void AddModel(vec3gpu* tris, UINT32 noTris,float4 modelCol)
 	{
 		this->modelTris[modelIdx] = tris;
 		this->modelTrisNo[modelIdx] = noTris;
+		this->modelColours[modelIdx] = modelCol;
 		modelIdx++;
 
 	}
 
 
-	__device__ int testIntersect(Ray r, Light l, vec3gpu &hitPoint, vec3gpu &hitNormal)
+	__device__ int testIntersect(Ray r, Light l, vec3gpu &hitPoint, vec3gpu &hitNormal,float &tVal)
 	{
 
 
@@ -170,6 +173,8 @@ public:
 
 		if (closestIdx == -1) return -1;
 
+
+		tVal = closestInteresction;
 		hitPoint = r.origin + (r.dir * closestInteresction);
 		hitNormal = closestNormal;
 
@@ -196,8 +201,8 @@ public:
 		hitNormal.normalise();
 
 
-		float diff = fmaxf(hitNormal.dot(lightDir), 0.0);
-
+		float diff = fmaxf(hitNormal.dot(lightDir*-1), 0.0);
+		
 
 		float4 lightCol = Lights[0].Colour;
 
@@ -212,10 +217,7 @@ public:
 		
 
 		//make this atbitrary
-		float4 col;
-		if (modelIdx == 0) col = make_float4(1.0, 0.0, 0.0, 1.0);
-		if (modelIdx == 1) col = make_float4(1.0, 1.0, 1.0, 1.0);
-		if (modelIdx == 2) col = make_float4(0.0, 0.0, 1.0, 1.0);
+		float4 col = this->modelColours[modelIdx];
 		float4 lightdiff = make_float4(lightCol.x * diff, lightCol.y * diff, lightCol.z * diff, 1.0);
 		
 		//float4 finalCol = fmaxf(1.0)
@@ -223,8 +225,8 @@ public:
 
 
 
-		return make_float4(lightdiff.x * col.x, lightdiff.y * col.y, lightdiff.z * col.z, 1.0);
-		return col;
+		return make_float4(col.x,  col.y,  col.z, 1.0);
+		//return col;
 
 
 	}
@@ -244,7 +246,8 @@ public:
 		Ray shadowray(hitPoint, shadowrayDir);
 		vec3gpu shadowhit;
 		vec3gpu shadowNormal;
-		int shadowHitIdx = this->testIntersect(shadowray, l, shadowhit, shadowNormal);
+		float t;
+		int shadowHitIdx = this->testIntersect(shadowray, l, shadowhit, shadowNormal,t);
 		//this might be wrong, shadows of models can hit itself?
 		if (shadowHitIdx != -1 && shadowHitIdx != modelIdx) {
 			return true;
@@ -262,153 +265,95 @@ public:
 
 
 
-
+	//SOMETHING IS DEFO WRONG WITH THIS?
 	//may cause an error default closest = 0 (e.g if negative but should be fine since not intereseted in behind camera(for now)?)
-	__device__ int hitSpheres(Ray r, Light l, vec3gpu& hitPoint)
+	__device__ bool hitSphere(int idx, Ray r, float& intersectVal)
 	{
 
+		vec3gpu L = r.origin - this->Spheres[idx]->Center;
+		float a = r.dir.dot(r.dir);
+		float b = 2 * r.dir.dot(L);
+		float c = L.dot(L) - this->Spheres[idx]->Radius * this->Spheres[idx]->Radius;
 
-
-
-
-		int closestIdx = -1;
-		float closestInteresction = 1000;
-		bool sphereChanged = false;
-
-
-
-
-
-		for (int i = 0; i < sphereIdx; i++)
+		float root1, root2;
+		float discriminant = b * b - (4 * a * c);
+		if (discriminant < 0) return false;
+		if (discriminant == 0)
 		{
-			vec3gpu center = Spheres[i].Center;
-			float radius = Spheres[i].Radius;
-
-			vec3gpu L = center - r.origin;
-			float4 col = make_float4(0.0, 0.0, 0.0, 0.0);
-			float distance = L.dot(r.dir);
-
-
-
-
-			float distFromCentresquare = L.dot(L) - distance * distance;
-
-
-			if (distFromCentresquare > radius * radius)
-			{
-				continue;
-			}
-
-			else
-			{
-				float hordistFromCentre = sqrtf(radius * radius - distFromCentresquare);
-
-
-
-				float intersection = distance - hordistFromCentre;
-
-
-				//MAYBE BUGGED?
-				if (closestInteresction > intersection)
-				{
-					closestIdx = i;
-					closestInteresction = intersection;
-				}
-
-
-
-
-			}
-			if (closestIdx == -1) return -1;
-
-			hitPoint = r.origin + (r.dir * closestInteresction);
-			return closestIdx;
-
-
-
+			root1 = -b / (2 * a);
+			root2 = -b / (2 * a);
+		}
+		else
+		{
+			root1 = (-b + sqrtf(discriminant)) / 2 * a;
+			root2 = (-b - sqrtf(discriminant)) / 2 * a;
 
 		}
 
-	}
+
+		if (root1 > root2)
+		{
+			intersectVal = root2;
+			return true;
+		}
+		intersectVal = root1;
+		return true;
 
 
-	__device__ float4 colourSphere(vec3gpu hitPoint,vec3gpu camPos,int sphereIdx, Light l)
-	{
 
-		Sphere s = Spheres[sphereIdx];
+		//vec3gpu center = Spheres[idx]->Center;
+		//float radius = Spheres[idx]->Radius;
+		//r.dir.normalise();
+		//vec3gpu L = center - r.origin;
+		//float4 col = make_float4(0.0, 0.0, 0.0, 0.0);
+		//float distance = L.dot(r.dir);
+		//if (distance < 0.0f) continue;
+		//float distFromCentresquare = L.dot(L) - (distance * distance);
+		//if (distFromCentresquare > (radius * radius)) return false;
 
-
-
-
-		//only works for 1 light
-
-		vec3gpu lightDir = l.Position - hitPoint;
-		lightDir.normalise();
-
-		
-		vec3gpu normal = hitPoint - s.Center;
-
-		normal.normalise();
-
-		vec3gpu reflection = (lightDir * normal) * 2.0;
-		reflection = reflection * (normal - lightDir);
-		reflection.normalise();
-		//need to pass in cam pos
-
-		vec3gpu viewDir = camPos - hitPoint;
-
-		viewDir.normalise();
+		//float hordistFromCentre = sqrtf((radius * radius) - distFromCentresquare);
 
 
-		float diff = fmaxf(normal.dot(lightDir), 0.0f);
 
-		//if (diff == 0.0f) return make_float4(0.0,0.0,0.0,1.0);
-		float reflect = reflection.dot(viewDir);
+		//float intersection = distance - hordistFromCentre;
+		//float intersect2 = distance + hordistFromCentre;
 
-		reflect = powf(reflect, 4);
+		//intersection = fminf(intersection, intersect2);
 
-
-		float4 lightCol = Lights[0].Colour;
-		//needs to be changed to easily tell if hit a sphere or not, infinite recursion make sperate function
-
-		//ambient + diffuse + spec
-
-		//spec term =  (0.8 * reflect) + 1.0 * 0.1;
-		float colX = s.Colour.x * diff * l.Colour.y;
-		float colY = s.Colour.y * diff * l.Colour.y;
-		float colZ = s.Colour.z * diff * l.Colour.z;
-
-		float max = fmaxf(colX, colY);
-		max = fmaxf(max, colZ);
-
-		max = 1 / max;
-
-		colX = colX * max;
-		colY = colY * max;
-		colZ = colZ * max;
-		
-
-		return make_float4(colX, colY, colZ, 1.0);
+		//intersectVal = intersection;
+		return true;
 
 
 	}
 
-
-	__device__ bool isPointInSphereShadow(vec3gpu hitPoint, Light l, int sphereIdx)
+	__device__ bool isPointInSphereShadow(vec3gpu& hitPoint, Light l,int curIdx)
 	{
 
 		vec3gpu shadowrayDir = l.Position - hitPoint;
 		shadowrayDir.normalise();
 		Ray shadowray(hitPoint, shadowrayDir);
 		vec3gpu shadowhit;
+		float t;
+		for (int i = 0; i < this->getNumSpheres(); i++)
+		{
 
-		//hit spheres calls colour spheres. maybe do this in main function instead?
-		if (this->hitSpheres(shadowray, l, shadowhit) != -1.0 && this->hitSpheres(shadowray, l, shadowhit) != sphereIdx) {
-			return true;
+			//cant hit itself to check (currently only doing 1 intersection on spheres)
+			if (i == curIdx) continue;
+			if (this->hitSphere(i, shadowray, t)) return true;
 
 		}
+		
 		return false;
 
+
+	}
+	
+
+
+
+	__device__ int getNumSpheres()
+	{
+		return this->sphereIdx;
 	}
 
 

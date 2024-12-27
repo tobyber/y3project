@@ -49,9 +49,18 @@ __global__ void addKernel(float4* pos, int screen_width, int screen_height,vec3g
 	
 	vec3gpu background[4] = {
 		vec3gpu(0,0,-1),
-		vec3gpu(-20, -50, 20),
-		vec3gpu(20, -50, 20),
-		vec3gpu(20, 50, 20),
+		vec3gpu(-20, -50, 10),
+		vec3gpu(20, -50, 10),
+		vec3gpu(20, 50, 10),
+
+	};
+
+
+	vec3gpu background2[4] = {
+		vec3gpu(0,0,-1),
+		vec3gpu(20, -50, 10),
+		vec3gpu(-20, -50, 10),
+		vec3gpu(-20, 50, 10),
 
 	};
 
@@ -75,7 +84,7 @@ __global__ void addKernel(float4* pos, int screen_width, int screen_height,vec3g
 	//pass light positions to shading?
 
 
-
+ 
 
 
 	//Ray r(	vec3(0, 0, 0), vec3(x / (float)screen_width, y / (float)screen_height, -1.0)	);
@@ -87,44 +96,49 @@ __global__ void addKernel(float4* pos, int screen_width, int screen_height,vec3g
 	//Ray r();
 	vec3gpu thing();
 	World w;
-	Light l1(vec3gpu(-2, 2, 0), make_float4(1.0, 1.0, 1.0, 1.0));
-	Sphere s1(vec3gpu(0, 3, -5), 1.7, make_float4(1.0, 0.0, 0.0, 1.0));
-	Sphere s2(vec3gpu(2, -2, -5), 0.7, make_float4(0.0, 0.0, 1.0, 1.0));
+	Light l1(vec3gpu(0, -1 , 0), make_float4(1.0, 1.0, 1.0, 1.0));
+	Sphere s1(vec3gpu(0, 3, -7), 1.0, make_float4(1.0, 0.0, 0.0, 1.0));
+	Sphere s2(vec3gpu(0, 0, -5), 1.0, make_float4(1.0, 0.0, 1.0, 1.0));
 	Sphere s3(vec3gpu(4, 2, -10), 0.7, make_float4(1.0, 1.0, 0.0, 1.0));
-	Sphere s4(vec3gpu(7, 5, -3), 0.4, make_float4(1.0, 0.0, 1.0, 1.0));
+	Sphere s4(vec3gpu(7, 5, -5 ), 0.4, make_float4(1.0, 0.0, 1.0, 1.0));
 	Sphere s5(vec3gpu(9, 3, -8), 1.0, make_float4(1.0, 1.0, 0.0, 1.0));
-	Sphere s6(vec3gpu(3, 1, -9), 0.5, make_float4(0.0, 1.0, 0.0, 1.0));
-	//Sphere ground(vec3gpu(0, -18, -5),10, make_float4(1.0, 1.0, 1.0, 1.0));
+    Sphere s6(vec3gpu(3, 1, -9), 1.5, make_float4(0.0, 1.0, 0.0, 1.0));
+	Sphere ground(vec3gpu(0, 0, -50),5.0, make_float4(1.0, 1.0, 1.0, 1.0));
 	//Sphere s2(vec3gpu(-1, 1, 2), 0.7, make_float4(1.0, 0.0, 0.0, 1.0));
 	
 
 	//w.AddModel(m2);
 	
 
+
+
+
+
 	///I AM CURRENTLY ADDING EVERYTHING ON EACH THREAD, DO THIS IN THE CPU FIRST THEN PASS TO EACH THREAD?
 	//spheres dont show if added after lig ht?
-	//currently all sphers red = 1.0 for shadow rays 
+	//SPHERES ARE NOT RENDERED CORRECTLY., somethings wrong especially if spheres are big or far back??.
 	//w.AddSphere(s);
+	
+	w.AddSphere(&s2);
+	w.AddSphere(&s1);
+ 
+	//w.AddSphere(s4);
+	//w.AddSphere(s5);
+	//w.AddSphere(s6);
+	//w.AddSphere(s3);
 	//w.AddSphere(ground);
-	w.AddSphere(s1);
-	w.AddSphere(s2);
-	w.AddSphere(s3);
-	w.AddSphere(s4);
-	w.AddSphere(s5);
-	w.AddSphere(s6);
-
-
 	w.AddLight(l1);
 	//w.AddModel(modelTris, modelTrisNo);
-	//w.AddModel(background, 1);
-	//w.AddModel(floor, 1);
+	w.AddModel(background, 1,make_float4(1.0,1.0,1.0,1.0));
+	w.AddModel(background2, 1, make_float4(1.0, 1.0, 1.0, 1.0));
+	//w.AddModel(floor, 1, make_float4(1.0, 1.0, 1.0, 1.0));
 	float4 col = make_float4(0.0, 0.0, 0.0, 1.0);
 	
 	float xPos = cameraPos.x;
 	float yPos = cameraPos.y;
 	float zPos = cameraPos.z;
 	Ray r(cameraPos,cameraRightDir, (float)x, (float)y, (float)screen_width, (float)screen_height,cameraPos.x-1.0f,cameraPos.x+1.0f,cameraPos.y-1.0f, cameraPos.y+1.0f,cameraPos.z+1.0f);
-	
+		
 
 
 
@@ -158,31 +172,101 @@ __global__ void addKernel(float4* pos, int screen_width, int screen_height,vec3g
 
 	//make this return the hitpoint?
 
-	float atten = 0.5;
 
-	for (int i = 0; i < 3; i++)
-	{
+	//for each sphere, check if ray hits -> 
+	// if hits then set colour.
 
-		int hitSphere = w.hitSpheres(r, l1, hitPoint);
-		//if the hitpoint is in a shadow, return black
-		if (w.isPointInSphereShadow(hitPoint, l1, hitSphere))
-		{
-			continue;
-		}
-		else {
 
-			float4 newCol = w.colourSphere(hitPoint,cameraPos ,hitSphere, l1);
-			col.x += newCol.x * atten;
-			col.y += newCol.y * atten;
-			col.z += newCol.z * atten;
 
-		}
+	float atten = 0.8f;
 
-		atten = atten * 0.5;
-	}
+
+
+	//int sphereIntersect = -1;
+	//float closestT = 10000;
+	//float curT = 10000;
+
+	//get closest -> then bounce off wall or sphere, if sphere is reflective, refract + reflect + shadow
 	
 
+		int sphereIntersect = -1;
+		float closestT = 10000;
+		float curT = 10000;
+		for (int j = 0; j < w.getNumSpheres(); j++)
+		{
 
+			if (w.hitSphere(j, r, curT))
+			{
+				if (curT < closestT)
+				{
+					closestT = curT;
+					sphereIntersect = j;
+
+				}
+
+			}
+
+
+		}
+
+
+		float modelT = 0;
+
+		int hitmodel = w.testIntersect(r, l1, hitPoint, hitNormal,modelT);
+		if (modelT < closestT)
+		{
+
+		if (hitmodel != -1)
+		{ 
+			
+
+				if (w.isPointInModelShadow(hitPoint, l1, hitmodel) || w.isPointInSphereShadow(hitPoint,l1,-1))
+				{
+					col = make_float4(0.0, 0.0, 0.0, 1.0);
+					
+				}
+				else
+				{
+					float4 newCol = w.colourModel(hitPoint, hitNormal, hitmodel, l1);
+					col.x += newCol.x * atten;
+					col.y += newCol.y * atten;
+					col.z += newCol.z * atten;
+						
+				}
+
+			}
+
+		}
+
+		else if (sphereIntersect != -1)
+		{
+
+			vec3gpu hitPoint2 = r.origin + (r.dir * closestT);
+			//vec3gpu hitPoint2 = r.origin + (r.dir * closestT);
+
+
+			//if in shadow
+			if (w.isPointInSphereShadow(hitPoint2, l1, sphereIntersect))
+			{
+				col = make_float4(0.0, 0.0, 0.0, 1.0);
+			}
+			else
+			{
+
+				float4 newCol = w.Spheres[sphereIntersect]->colourSphere(hitPoint2,cameraPos, l1);
+				col.x += newCol.x * atten;
+				col.y += newCol.y * atten;
+				col.z += newCol.z * atten;
+
+
+			}
+
+
+
+		}
+
+		atten *= 0.5;
+	
 
 
 	pos[y * screen_width + x] = col;
@@ -217,6 +301,7 @@ glm::vec3 cameraLookAt = glm::vec3(0.0, 0.0, -1.0);
 glm::vec3 cameraDirection = glm::vec3(0.0, 0.0, 0.0);
 glm::vec3 rightDir;
 vec3gpu gpuRightDir;
+vec3gpu gpucamLookAt(0, 0, -1.0);
 
 bool LeftPressed = false;
 
@@ -521,6 +606,19 @@ void mouseMove(int x, int y) {
 	direction.y = sin(glm::radians(pitch));
 	direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
 	cameraLookAt = glm::normalize(direction);
+	
+	
+	
+
+	glm::mat4 temp = glm::lookAt(cameraPos, cameraPos + cameraLookAt, glm::vec3(0, 1, 0));
+
+
+
+	gpucamLookAt.x = cameraLookAt.x;
+	gpucamLookAt.y = cameraLookAt.y;
+	gpucamLookAt.z = cameraLookAt.z;
+
+
 	rightDir = glm::normalize(glm::cross(cameraLookAt, glm::vec3(0, 1, 0)));
 	gpuRightDir.x = rightDir.x;
 	gpuRightDir.y = rightDir.y;
