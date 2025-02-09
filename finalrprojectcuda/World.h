@@ -84,6 +84,15 @@ public:
 	}
 
 
+	__device__ Sphere* getSphere(const int& idx)
+	{
+
+		return this->Spheres[sphereIdx];
+
+	}
+
+
+
 	__device__ int testIntersect(Ray r, Light l, vec3gpu &hitPoint, vec3gpu &hitNormal,float &tVal)
 	{
 
@@ -238,18 +247,19 @@ public:
 
 
 
-	__device__ bool isPointInModelShadow(vec3gpu hitPoint, Light l, int modelIdx)
+	__device__ bool isPointInModelShadow(vec3gpu hitPoint, Light l)
 	{
 
 		vec3gpu shadowrayDir = l.Position - hitPoint;
 		shadowrayDir.normalise();
-		Ray shadowray(hitPoint, shadowrayDir);
+		Ray shadowray(hitPoint + shadowrayDir*0.01f, shadowrayDir);
 		vec3gpu shadowhit;
 		vec3gpu shadowNormal;
 		float t;
 		int shadowHitIdx = this->testIntersect(shadowray, l, shadowhit, shadowNormal,t);
-		//this might be wrong, shadows of models can hit itself?
-		if (shadowHitIdx != -1 && shadowHitIdx != modelIdx) {
+		//need to refactor to loop 
+		if (shadowHitIdx != -1) 
+		{
 			return true;
 
 		}
@@ -326,27 +336,139 @@ public:
 
 	}
 
-	__device__ bool isPointInSphereShadow(vec3gpu& hitPoint, Light l,int curIdx)
+
+
+
+	__device__ int hitClosestSphere(Ray r, float &intersectVal)
+	{
+
+		int sphereIntersect = -1;
+		float closestT = 10000;
+		float curT = 10000;
+		for (int j = 0; j < this->getNumSpheres(); j++)
+		{
+
+			if (this->hitSphere(j, r, curT))
+			{
+				if (curT < closestT)
+				{
+					closestT = curT;
+					sphereIntersect = j;
+
+				}
+
+			}
+
+
+		}
+
+		intersectVal = closestT;
+		return sphereIntersect;
+	}
+	
+
+
+
+
+
+
+	//refactor to work on world lights
+	__device__ bool isPointInSphereShadow(vec3gpu& hitPoint, Light l)
 	{
 
 		vec3gpu shadowrayDir = l.Position - hitPoint;
 		shadowrayDir.normalise();
-		Ray shadowray(hitPoint, shadowrayDir);
+		Ray shadowray(hitPoint , shadowrayDir);
 		vec3gpu shadowhit;
 		float t;
 		for (int i = 0; i < this->getNumSpheres(); i++)
 		{
-
-			//cant hit itself to check (currently only doing 1 intersection on spheres)
-			if (i == curIdx) continue;
 			if (this->hitSphere(i, shadowray, t)) return true;
-
 		}
 		
 		return false;
 
 
 	}
+
+
+	__device__ bool isPointInWorldShadow(vec3gpu& hitPoint, Light l)
+	{
+		if	(isPointInSphereShadow(hitPoint, l) || isPointInModelShadow(hitPoint, l))
+		{
+			return true;
+		}
+
+		return false;
+	}
+
+
+
+	//maybe change this name?
+	__device__ Ray reflectFromSphere(Ray iRay ,vec3gpu hitPoint , const int sphIdx)
+	{
+		Sphere* curSphere = this->Spheres[sphIdx];
+
+		vec3gpu normal = (hitPoint - curSphere->Center);
+		normal.normalise();
+		vec3gpu newDir = iRay.dir - (normal * iRay.dir.dot(normal) * 2.0f  );
+		newDir.normalise();
+		Ray reflected(hitPoint+(newDir*0.01), newDir);
+		return reflected;
+	}
+
+
+
+	__device__ float4 getColourFromReflect(Ray r, vec3gpu hitPoint2,int sphereIntersect,Light l1,vec3gpu cameraPos)
+	{
+		float4 col = make_float4(0.0, 0.0, 0.0, 1.0);
+		vec3gpu newhitPoint;
+		vec3gpu newNormal;
+		float newT;
+		Ray reflect = this->reflectFromSphere(r, hitPoint2, sphereIntersect);
+		int hitmodelNew = this->testIntersect(reflect, l1, newhitPoint, newNormal, newT);
+		float newT2;
+		int hitSphereNew = this->hitClosestSphere(reflect, newT2);
+		if (newT < newT2)
+		{
+			if (hitmodelNew != -1)
+			{
+				//float4 newCol = make_float4(0.0, 0.0, 0.0, 1.0);
+				float4 newCol = this->colourModel(newhitPoint, newNormal, hitmodelNew, l1);
+				col.x += newCol.x * 0.15;
+				col.y += newCol.y * 0.15;
+				col.z += newCol.z * 0.15;
+			}
+		}
+		else
+		{
+			if (hitSphereNew != -1)
+			{
+				newhitPoint = reflect.origin + (reflect.dir * newT2);
+				//check if relfection in shadow
+
+
+
+				float4 newCol = this->Spheres[hitSphereNew]->colourSphere(newhitPoint, cameraPos, l1);
+				col.x += newCol.x * 0.15;
+				col.y += newCol.y * 0.15;
+				col.z += newCol.z * 0.15;
+
+
+			}
+
+		}
+		float4 newCol = this->Spheres[sphereIntersect]->colourSphere(hitPoint2, cameraPos, l1);
+		col.x += newCol.x * 0.85;
+		col.y += newCol.y * 0.85;
+		col.z += newCol.z * 0.85;
+
+
+		return col;
+
+	}
+
+
 	
 
 

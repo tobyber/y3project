@@ -27,22 +27,28 @@
 #include "Light.h"
 
 
+
 class Sphere
 {
 public:
+
+	
+
+
 	vec3gpu Center;
 	float Radius;
 	float4 Colour;
-
+	int material;
 
 	__device__ Sphere() {}
 
 
-	__device__ Sphere(vec3gpu center, float radius,float4 colour)
+	__device__ Sphere(vec3gpu center, float radius,float4 colour, int mat)
 	{
 		this->Center = center;
 		this->Radius = radius;
 		this->Colour = colour;
+		this->material = material;
 	}
 
 
@@ -68,25 +74,25 @@ public:
 
 		normal.normalise();
 
-		//vec3gpu reflection = (lightDir * normal) * 2.0;
-		//reflection = reflection * (normal - lightDir);
-		//reflection.normalise();
+		vec3gpu reflection = (lightDir * normal) * 2.0;
+		reflection = reflection * (normal - lightDir);
+		reflection.normalise();
 		//need to pass in cam pos
 
-		//vec3gpu viewDir = camPos - hitPoint;
+		vec3gpu viewDir = camPos - hitPoint;
 
-		//viewDir.normalise();
+		viewDir.normalise();
 
 
 
 
 		float diff = normal.dot(lightDir*-1);
 		//diff = 1.0;
-		//if (diff < 0) return make_float4(0.0, 0.0, 0.0, 1.0);
+		if (diff <= 0) return make_float4(0.0, 0.0, 0.0, 1.0);
 		//if (diff == 0.0f) return make_float4(0.0,0.0,0.0,1.0);
-		//float reflect = reflection.dot(viewDir);
+		float reflect = reflection.dot(viewDir);
 
-		//reflect = powf(reflect, 4);
+		reflect = powf(reflect, 4);
 
 
 		float4 lightCol = l.Colour;
@@ -95,9 +101,12 @@ public:
 		//ambient + diffuse + spec
 
 		//spec term =  (0.8 * reflect) + 1.0 * 0.1; (*diff)
+		
 		float colX = (this->Colour.x * l.Colour.x * diff) + (0.2 * this->Colour.x);
 		float colY = (this->Colour.y * l.Colour.y * diff) + (0.2 * this->Colour.y);
 		float colZ = (this->Colour.z * l.Colour.z * diff) + (0.2 * this->Colour.z);
+
+
 
 		float max = fmaxf(colX, colY);
 		max = fmaxf(max, colZ);

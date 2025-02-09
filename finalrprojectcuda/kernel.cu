@@ -32,6 +32,10 @@
 
 
 
+
+
+
+
 void handleKeys();
 
 
@@ -78,60 +82,21 @@ __global__ void addKernel(float4* pos, int screen_width, int screen_height,vec3g
 	int y = blockIdx.y * blockDim.y + threadIdx.y;
 
 	if (y > screen_height || x > screen_width) return;
-	
-	//setup light positions
 
-	//pass light positions to shading?
-
-
- 
-
-
-	//Ray r(	vec3(0, 0, 0), vec3(x / (float)screen_width, y / (float)screen_height, -1.0)	);
-	//render_ray(pos, vec3(0,0,0), (float)x, (float)y, (float)screen_width, (float)screen_height, -1.0f, 1.0f, 1.0f, -1.0f);
-	
-
-	//NEED A WAY TO GET/SET MODEL INDEX
-
-	//Ray r();
 	vec3gpu thing();
 	World w;
 	Light l1(vec3gpu(0, -1 , 0), make_float4(1.0, 1.0, 1.0, 1.0));
-	Sphere s1(vec3gpu(0, 3, -7), 1.0, make_float4(1.0, 0.0, 0.0, 1.0));
-	Sphere s2(vec3gpu(0, 0, -5), 1.0, make_float4(1.0, 0.0, 1.0, 1.0));
-	Sphere s3(vec3gpu(4, 2, -10), 0.7, make_float4(1.0, 1.0, 0.0, 1.0));
-	Sphere s4(vec3gpu(7, 5, -5 ), 0.4, make_float4(1.0, 0.0, 1.0, 1.0));
-	Sphere s5(vec3gpu(9, 3, -8), 1.0, make_float4(1.0, 1.0, 0.0, 1.0));
-    Sphere s6(vec3gpu(3, 1, -9), 1.5, make_float4(0.0, 1.0, 0.0, 1.0));
-	Sphere ground(vec3gpu(0, 0, -50),5.0, make_float4(1.0, 1.0, 1.0, 1.0));
-	//Sphere s2(vec3gpu(-1, 1, 2), 0.7, make_float4(1.0, 0.0, 0.0, 1.0));
-	
-
-	//w.AddModel(m2);
-	
+	Sphere s1(vec3gpu(0, 3, -7), 1.0, make_float4(1.0, 0.0, 0.0, 1.0),1);
+	Sphere s2(vec3gpu(0, 0, -5), 1.0, make_float4(1.0, 0.0, 1.0, 1.0),1);
 
 
-
-
-
-	///I AM CURRENTLY ADDING EVERYTHING ON EACH THREAD, DO THIS IN THE CPU FIRST THEN PASS TO EACH THREAD?
-	//spheres dont show if added after lig ht?
-	//SPHERES ARE NOT RENDERED CORRECTLY., somethings wrong especially if spheres are big or far back??.
-	//w.AddSphere(s);
-	
 	w.AddSphere(&s2);
 	w.AddSphere(&s1);
- 
-	//w.AddSphere(s4);
-	//w.AddSphere(s5);
-	//w.AddSphere(s6);
-	//w.AddSphere(s3);
-	//w.AddSphere(ground);
+
 	w.AddLight(l1);
 	//w.AddModel(modelTris, modelTrisNo);
 	w.AddModel(background, 1,make_float4(1.0,1.0,1.0,1.0));
 	w.AddModel(background2, 1, make_float4(1.0, 1.0, 1.0, 1.0));
-	//w.AddModel(floor, 1, make_float4(1.0, 1.0, 1.0, 1.0));
 	float4 col = make_float4(0.0, 0.0, 0.0, 1.0);
 	
 	float xPos = cameraPos.x;
@@ -141,131 +106,66 @@ __global__ void addKernel(float4* pos, int screen_width, int screen_height,vec3g
 		
 
 
-
-
 	vec3gpu hitPoint;
 	vec3gpu hitNormal;
-//	float atten = 0.5;
-//	for (int i = 0; i < 4; i++)
-//	{
-//		int hitmodel = w.testIntersect(r, l1, hitPoint, hitNormal);
-//		if (hitmodel != -1)
-//		{
-//			if (w.isPointInModelShadow(hitPoint, l1, hitmodel))
-//			{
-//				continue;
-//			}
-//			else
-//			{
-//				float4 newCol = w.colourModel(hitPoint, hitNormal, hitmodel, l1);
-//				col.x += newCol.x * atten;
-//				col.y += newCol.y * atten;
-//				col.z += newCol.z * atten;
 
-//			}
-
-
-//			atten = atten * 0.5;
-//		}
-
-//	}
-
-	//make this return the hitpoint?
-
-
-	//for each sphere, check if ray hits -> 
-	// if hits then set colour.
-
-
-
-	float atten = 0.8f;
-
-
-
-	//int sphereIntersect = -1;
-	//float closestT = 10000;
-	//float curT = 10000;
-
-	//get closest -> then bounce off wall or sphere, if sphere is reflective, refract + reflect + shadow
-	
-
+		
 		int sphereIntersect = -1;
 		float closestT = 10000;
-		float curT = 10000;
-		for (int j = 0; j < w.getNumSpheres(); j++)
-		{
-
-			if (w.hitSphere(j, r, curT))
-			{
-				if (curT < closestT)
-				{
-					closestT = curT;
-					sphereIntersect = j;
-
-				}
-
-			}
-
-
-		}
-
-
+		sphereIntersect = w.hitClosestSphere(r, closestT);
 		float modelT = 0;
-
 		int hitmodel = w.testIntersect(r, l1, hitPoint, hitNormal,modelT);
-		if (modelT < closestT)
+		if ((modelT < closestT))
 		{
 
-		if (hitmodel != -1)
-		{ 
+			if (hitmodel != -1)
+			{
 			
 
-				if (w.isPointInModelShadow(hitPoint, l1, hitmodel) || w.isPointInSphereShadow(hitPoint,l1,-1))
-				{
-					col = make_float4(0.0, 0.0, 0.0, 1.0);
-					
-				}
-				else
-				{
-					float4 newCol = w.colourModel(hitPoint, hitNormal, hitmodel, l1);
-					col.x += newCol.x * atten;
-					col.y += newCol.y * atten;
-					col.z += newCol.z * atten;
-						
-				}
+
+
+			if (w.isPointInWorldShadow(hitPoint, l1))
+			{
+				col = make_float4(0.0, 0.0, 0.0, 1.0);
 
 			}
+			else
+			{
+				float4 newCol = w.colourModel(hitPoint, hitNormal, hitmodel, l1);
+				col.x = newCol.x ;
+				col.y = newCol.y ;
+				col.z = newCol.z;
+
+			}
+		}
 
 		}
 
 		else if (sphereIntersect != -1)
 		{
-
 			vec3gpu hitPoint2 = r.origin + (r.dir * closestT);
-			//vec3gpu hitPoint2 = r.origin + (r.dir * closestT);
+
+			//if glass do this,
+
+			//check material; visual artifacts
+			col = w.getColourFromReflect(r, hitPoint2, sphereIntersect, l1, cameraPos);
+			
+			//else normal colour
 
 
-			//if in shadow
-			if (w.isPointInSphereShadow(hitPoint2, l1, sphereIntersect))
-			{
-				col = make_float4(0.0, 0.0, 0.0, 1.0);
-			}
-			else
-			{
+			//}
 
-				float4 newCol = w.Spheres[sphereIntersect]->colourSphere(hitPoint2,cameraPos, l1);
-				col.x += newCol.x * atten;
-				col.y += newCol.y * atten;
-				col.z += newCol.z * atten;
-
-
-			}
-
-
-
+		} 
+		else
+		{
+			//hits nothing
+	
 		}
 
-		atten *= 0.5;
+
+		
+
+		
 	
 
 

@@ -32,6 +32,16 @@ public:
 	{
 
 
+		//something like that
+
+		//left = camerarotation matrix + 1 on z, -1 on x
+		//right = -1 (1,0,1) * rotation matrix
+		//top = (0,1,0) * rotation matrix
+		//bottom 
+		//
+
+
+
 
 		//INVERSE MATRIX THEN MULTIPLY
 		//Ray ray(cameraPos,vec3gpu());
@@ -43,15 +53,29 @@ public:
 		float pixelSize = 2 / width;
 		
 		//camera look at is +1 in front of camerapos
-		//so left is -1 in the x from the camerapos+cameralookat (image plane)
+		//so left is -1 in the x from the camerapos+cameralookat (image plane)	
 		//u,v in image plane space
+
+		//need to rotate and translate imagea plane with camera, so camera is in center -1
+
+
+		//the positions are always teh same, then rotate every point by the matrix
+
+
+
+
+
+
+
+
 		
 		//left = camPos + lookat then translate by -1
 
 		//DOESNT WORK!
 
 
-
+		//CAMERALOOK AT + NORMALISED DIRECTION = CENTRE OF IMAGE PLANE
+		//-E.G LEFT WILL BE - X AXIS OF THE NORMALISED DIRECTION VECTOR?
 
 
 
@@ -68,7 +92,7 @@ public:
 
 
 		//
-
+		
 		//cam space -> world space   //inverse of world to cam?
 
 
@@ -88,7 +112,7 @@ public:
 		vec3gpu spot(u, v,zPlane);
 
 
-		//vec3gpu spot2;
+		//vec3gpu spot2;	
 
 		//spot2.x = camTransform[0] * spot.x + camTransform[1] * spot.y + camTransform[2] * spot.z + camTransform[3] * 1;
 		//spot2.y = camTransform[4] * spot.x + camTransform[5] * spot.y + camTransform[6] * spot.z + camTransform[7] * 1;

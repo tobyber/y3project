@@ -42,7 +42,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>C:\Users\Toby Bernard\source\repos\finalrprojectcuda\finalrprojectcuda;C:\Users\Toby Bernard\source\repos\finalrprojectcuda\finalrprojectcuda\shaders;C:\Users\Toby Bernard\source\repos\finalrprojectcuda\finalrprojectcuda\glm;C:\Users\Toby Bernard\source\repos\finalrprojectcuda\finalrprojectcuda\GL;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Users\Toby Bernard\source\repos\finalrprojectcuda\finalrprojectcuda\Libraries;$(LibraryPath)</LibraryPath>
+    <LibraryPath>C:\Users\tobyj\source\repos\tobyber\y3project\finalrprojectcuda\Libraries;C:\Users\Toby Bernard\source\repos\finalrprojectcuda\finalrprojectcuda\Libraries;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>C:\Users\Toby Bernard\source\repos\finalrprojectcuda\finalrprojectcuda\Libraries;$(IncludePath)</IncludePath>
@@ -61,7 +61,7 @@
     </Link>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
-      <Include>C:\Users\Toby Bernard\source\repos\finalrprojectcuda\finalrprojectcuda;%(Include)</Include>
+      <Include>C:\Users\Toby Bernard\source\repos\finalrprojectcuda\finalrprojectcuda;C:\Users\tobyj\source\repos\tobyber\y3project\finalrprojectcuda\Libraries;%(Include)</Include>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -95,6 +95,7 @@
     <None Include="shader\shader.vert" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="float4.cpp" />
     <ClCompile Include="shaders\Shader.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -117,6 +118,7 @@
     <ClInclude Include="Sphere.h" />
     <ClInclude Include="Triangle.h" />
     <ClInclude Include="vec3gpu.h" />
+    <ClInclude Include="vec4gpu.h" />
     <ClInclude Include="World.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
