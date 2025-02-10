@@ -28,105 +28,60 @@ class Ray
 public:
 	__device__ Ray() {this->dir = vec3gpu();	this->origin = vec3gpu(); }
 	__device__ Ray(vec3gpu origin, vec3gpu direction) {	this->dir = direction;	this->origin = origin;}
-	__device__ Ray( vec3gpu cameraPos,vec3gpu cameraRightDir, float x, float y, float width, float height, float left, float right, float bottom, float top,float zPlane )
+	__device__ Ray( vec3gpu cameraPos,vec3gpu cameraRightDir, float x, float y, float width, float height, float left, float right, float bottom, float top,float zPlane ,vec3gpu gpucamLookAt)
 	{
 
-
-		//something like that
-
-		//left = camerarotation matrix + 1 on z, -1 on x
-		//right = -1 (1,0,1) * rotation matrix
-		//top = (0,1,0) * rotation matrix
-		//bottom 
-		//
+		
 
 
 
-
-		//INVERSE MATRIX THEN MULTIPLY
-		//Ray ray(cameraPos,vec3gpu());
+		//this->origin = cameraPos;
 		this->origin = cameraPos;
 
 		//IMAGE PLANE = [-1,1]
 		//
 		//get pixel size from plane size,given that aspect ratio is 1:1
 		float pixelSize = 2 / width;
-		
-		//camera look at is +1 in front of camerapos
-		//so left is -1 in the x from the camerapos+cameralookat (image plane)	
-		//u,v in image plane space
-
-		//need to rotate and translate imagea plane with camera, so camera is in center -1
-
-
-		//the positions are always teh same, then rotate every point by the matrix
-
-
-
-
-
-
 
 
 		
-		//left = camPos + lookat then translate by -1
-
-		//DOESNT WORK!
-
-
-		//CAMERALOOK AT + NORMALISED DIRECTION = CENTRE OF IMAGE PLANE
-		//-E.G LEFT WILL BE - X AXIS OF THE NORMALISED DIRECTION VECTOR?
-
-
-
-
-
-		//the left and bottom can move in world space from the axes e.g need all the information not just u,v
-		//float left2 = (cameraPos + camLookAt).x - 1;
-		//float bottom2 = (cameraPos + camLookAt).y - 1;
-		//u,v are the vectors in world coordinates, i think
-		float u = left + ((x + 0.5) * pixelSize);
-		float v = bottom + ((y + 0.5) * pixelSize);
-		//given camera is aligned to axes.
-		vec3gpu ldir;
-
-
-		//
+		float u = -1 + ((x + 0.5) * pixelSize);
+		float v = -1 + ((y + 0.5) * pixelSize);
 		
-		//cam space -> world space   //inverse of world to cam?
 
 
 		cameraRightDir.normalise();
-		//vec3gpu testDir = cameraRightDir*u;
-		//z not calculatred
-	
-		//ldir.normalise();
-
-
-
-		//dir.y = v * 1;
-		//direction goes foward since plane is at z = 1;
-		//dir.z = 1.0;
-
-
-		vec3gpu spot(u, v,zPlane);
-
-
-		//vec3gpu spot2;	
-
-		//spot2.x = camTransform[0] * spot.x + camTransform[1] * spot.y + camTransform[2] * spot.z + camTransform[3] * 1;
-		//spot2.y = camTransform[4] * spot.x + camTransform[5] * spot.y + camTransform[6] * spot.z + camTransform[7] * 1;
-		//spot2.z = camTransform[8] * spot.x + camTransform[9] * spot.y + camTransform[10] * spot.z + camTransform[11] * 1;
-
-
 		
-		//ldir = (spot - this->origin);
 
-		vec3gpu unNormdir(spot - cameraPos);
+		vec3gpu viewDir = gpucamLookAt - cameraPos;
+		viewDir.normalise();
+		float planeWidthHalf = tanf(20.0f / 2.0f);
+		float aspectRatio = height/width;
+		float planeHeightHalf = aspectRatio * planeWidthHalf;
+		vec3gpu planeRDir = viewDir.cross(vec3gpu(0, 1, 0));
+
+		vec3gpu planeUDir = planeRDir.cross(viewDir);
+		planeRDir.normalise();
+		planeUDir.normalise();
+
+
+
+		vec3gpu bottomleft = gpucamLookAt - (planeRDir*planeWidthHalf)-(planeUDir*planeHeightHalf);
+
+		vec3gpu xOffset = (planeRDir * 2 * planeWidthHalf) * (1.0f/width);
+		vec3gpu yOffset = (planeUDir * 2 * planeHeightHalf) * (1.0f / height);
+
+
+		vec3gpu planePoint = bottomleft + (xOffset*x) + (yOffset * y);
+		
+
+		vec3gpu unNormdir(planePoint - cameraPos);
 
 		unNormdir.normalise();
 
 		this->dir = unNormdir;
+
+
 
 	}
 	vec3gpu dir;

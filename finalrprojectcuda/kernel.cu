@@ -47,7 +47,7 @@ __device__ void renderRay(float4* pos, vec3gpu cameraPos, float x, float y, floa
 
 
 
-__global__ void addKernel(float4* pos, int screen_width, int screen_height,vec3gpu* modelTris ,UINT32 modelTrisNo, vec3gpu cameraPos, vec3gpu cameraRightDir)
+__global__ void addKernel(float4* pos, int screen_width, int screen_height,vec3gpu* modelTris ,UINT32 modelTrisNo, vec3gpu cameraPos, vec3gpu cameraRightDir,vec3gpu gpucamLookAt)
 {
 
 	
@@ -95,15 +95,15 @@ __global__ void addKernel(float4* pos, int screen_width, int screen_height,vec3g
 
 	w.AddLight(l1);
 	//w.AddModel(modelTris, modelTrisNo);
-	w.AddModel(background, 1,make_float4(1.0,1.0,1.0,1.0));
-	w.AddModel(background2, 1, make_float4(1.0, 1.0, 1.0, 1.0));
+	//w.AddModel(background, 1,make_float4(1.0,1.0,1.0,1.0));
+	//w.AddModel(background2, 1, make_float4(1.0, 1.0, 1.0, 1.0));
 	float4 col = make_float4(0.0, 0.0, 0.0, 1.0);
 	
 	float xPos = cameraPos.x;
 	float yPos = cameraPos.y;
 	float zPos = cameraPos.z;
-	Ray r(cameraPos,cameraRightDir, (float)x, (float)y, (float)screen_width, (float)screen_height,cameraPos.x-1.0f,cameraPos.x+1.0f,cameraPos.y-1.0f, cameraPos.y+1.0f,cameraPos.z+1.0f);
-		
+	Ray r(cameraPos,cameraRightDir, (float)x, (float)y, (float)screen_width, (float)screen_height,cameraPos.x-1.0f,cameraPos.x+1.0f,cameraPos.y-1.0f, cameraPos.y+1.0f,cameraPos.z+1.0f,gpucamLookAt);
+	
 
 
 	vec3gpu hitPoint;
@@ -189,7 +189,7 @@ bool wPressed = false;
 bool aPressed = false;
 bool sPressed = false;
 bool dPressed = false;
-float cameraSpeed = 0.001;
+float cameraSpeed = 0.01;
 
 
 //mouse handles
@@ -202,9 +202,11 @@ glm::vec3 cameraDirection = glm::vec3(0.0, 0.0, 0.0);
 glm::vec3 rightDir;
 vec3gpu gpuRightDir;
 vec3gpu gpucamLookAt(0, 0, -1.0);
+vec3gpu gpuUpDir;
 
 bool LeftPressed = false;
-
+float* camMatrix;
+float* gpucamMatrix;
 
 
 
@@ -285,7 +287,7 @@ void display()
 	
 	dim3 block(16, 16, 1);
 	dim3 grid(window_width / block.x, window_height / block.y, 1);
-	addKernel<<<grid, block >>>(data_ptr, window_width, window_height,modelTrisGPU,m1.NUMBER_OF_TRIANGLES,gpucameraPos,gpuRightDir);
+	addKernel<<<grid, block >>>(data_ptr, window_width, window_height,modelTrisGPU,m1.NUMBER_OF_TRIANGLES,gpucameraPos,gpuRightDir,gpucamLookAt);
 	
 	
 	cudaGraphicsUnmapResources(1, &cuda_tex_resource, 0);
@@ -478,7 +480,7 @@ void keyUp(unsigned char key, int x, int y)
 void mouseMove(int x, int y) {
 
 	//Inspired by learnopgl's code: https://learnopengl.com/Getting-started/Camera
-	const float sensitivity = 0.1f;
+	const float sensitivity = 0.05f;
 	float xdiff = (x - lastMouseX) * sensitivity;
 	float ydiff = (lastMouseY - y) * sensitivity;
 
@@ -491,7 +493,7 @@ void mouseMove(int x, int y) {
 	pitch += ydiff;
 
 	//allow cursor to stay in centre of screen
-	//glutWarpPointer(window_width / 2, window_height / 2);
+	glutWarpPointer(window_width / 2, window_height / 2);
 
 
 
@@ -506,17 +508,25 @@ void mouseMove(int x, int y) {
 	direction.y = sin(glm::radians(pitch));
 	direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
 	cameraLookAt = glm::normalize(direction);
+		
 	
 	
 	
-
 	glm::mat4 temp = glm::lookAt(cameraPos, cameraPos + cameraLookAt, glm::vec3(0, 1, 0));
 
+	//take the inverse to go cam -> world, transpose to get in row-major order.
+	temp = glm::inverseTranspose(temp);
+	
+	camMatrix = (float*)glm::value_ptr(temp);
+	
+	
+	cudaMalloc((void**)&gpucamMatrix, sizeof(float)*16);
+	cudaMemcpy(gpucamMatrix, camMatrix, sizeof(float)*16, cudaMemcpyHostToDevice);
 
-
-	gpucamLookAt.x = cameraLookAt.x;
-	gpucamLookAt.y = cameraLookAt.y;
-	gpucamLookAt.z = cameraLookAt.z;
+	
+	gpucamLookAt.x = cameraPos.x + cameraLookAt.x;
+	gpucamLookAt.y = cameraPos.y + cameraLookAt.y;
+	gpucamLookAt.z = cameraPos.z + cameraLookAt.z;
 
 
 	rightDir = glm::normalize(glm::cross(cameraLookAt, glm::vec3(0, 1, 0)));
@@ -533,25 +543,42 @@ void handleKeys()
 
 	if (wPressed )
 	{
-		cameraPos.z += ( 1* cameraSpeed);
-		gpucameraPos.z += (1 * cameraSpeed);
+		cameraPos -= ( cameraLookAt* cameraSpeed);
+		glm::vec3 newPos = (cameraLookAt * cameraSpeed);
+		gpucameraPos.x -= newPos.x;
+		gpucameraPos.y -= newPos.y;
+		gpucameraPos.z -= newPos.z;
 	}
 
 	if (sPressed )
 	{
-		cameraPos.z -=(1* cameraSpeed);
-		gpucameraPos.z -= (1 * cameraSpeed);
+		cameraPos += (cameraLookAt * cameraSpeed);
+		glm::vec3 newPos =  (cameraLookAt * cameraSpeed);
+		gpucameraPos.x += newPos.x;
+		gpucameraPos.y += newPos.y;
+		gpucameraPos.z += newPos.z;
 	}
 
 	if (aPressed )
 	{
-		cameraPos.x += ( 1* cameraSpeed);
-		gpucameraPos.x += (1 * cameraSpeed);
+
+		glm::vec3 cameraLeftMove = glm::normalize(glm::cross(cameraLookAt, glm::vec3(0, 1, 0)));
+
+
+		glm::vec3 posDiff = (cameraLeftMove * cameraSpeed);
+		cameraPos += posDiff;
+		gpucameraPos.x += posDiff.x;
+		gpucameraPos.y += posDiff.y;
+		gpucameraPos.z += posDiff.z;
 	}
 	if (dPressed )
 	{
-		cameraPos.x -= (1* cameraSpeed);
-		gpucameraPos.x -= (1 * cameraSpeed);
+		glm::vec3 cameraLeftMove = glm::normalize(glm::cross(cameraLookAt, glm::vec3(0, 1, 0)));
+		glm::vec3 posDiff = (cameraLeftMove * cameraSpeed);
+		cameraPos -= posDiff;
+		gpucameraPos.x -= posDiff.x;
+		gpucameraPos.y -= posDiff.y;
+		gpucameraPos.z -= posDiff.z;
 	}
 
 
