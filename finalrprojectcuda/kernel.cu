@@ -17,6 +17,13 @@
 #include "cuda_gl_interop.h"
 #include "device_launch_parameters.h"
 
+#include "imgui/imgui.h"
+#include "imgui/imgui_impl_glut.h"
+#include "imgui/imgui_impl_opengl3.h"
+
+
+
+
 #include "shaders\Shader.h"
 #include "helper_cuda.h"
 #include <stdio.h>
@@ -95,8 +102,8 @@ __global__ void addKernel(float4* pos, int screen_width, int screen_height,vec3g
 
 	w.AddLight(l1);
 	//w.AddModel(modelTris, modelTrisNo);
-	//w.AddModel(background, 1,make_float4(1.0,1.0,1.0,1.0));
-	//w.AddModel(background2, 1, make_float4(1.0, 1.0, 1.0, 1.0));
+	w.AddModel(background, 1,make_float4(1.0,1.0,1.0,1.0));
+	w.AddModel(background2, 1, make_float4(1.0, 1.0, 1.0, 1.0));
 	float4 col = make_float4(0.0, 0.0, 0.0, 1.0);
 	
 	float xPos = cameraPos.x;
@@ -148,10 +155,12 @@ __global__ void addKernel(float4* pos, int screen_width, int screen_height,vec3g
 			//if glass do this,
 
 			//check material; visual artifacts
-			col = w.getColourFromReflect(r, hitPoint2, sphereIntersect, l1, cameraPos);
-			
+			//col = w.getColourFromReflect(r, hitPoint2, sphereIntersect, l1, cameraPos);
+			float4 newCol = w.Spheres[sphereIntersect]->colourSphere(hitPoint2, cameraPos, l1);
 			//else normal colour
-
+			col.x = newCol.x;
+			col.y = newCol.y;
+			col.z = newCol.z;
 
 			//}
 
@@ -368,6 +377,10 @@ void init()
 	{
 		std::cout << "failed to load shader" << std::endl;
 	}
+
+
+
+
 
 
 
@@ -615,9 +628,38 @@ int main(int argc, char** argv)
 	glutPassiveMotionFunc(mouseMove);
 	glutIdleFunc(idle);
 
+
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO();
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+	
+
+
+	//ImGui::StyleColorsDark();
+	// Setup Platform/Renderer backends
+	ImGui_ImplGLUT_Init();
+	ImGui_ImplOpenGL3_Init();
+	ImGui_ImplGLUT_InstallFuncs();
+
+
+
+
+
+
+
 	//starts the main loop. Program loops and calls callback functions as appropriate.
 	init();
 	glutMainLoop();
+	
+
+
+
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGLUT_Shutdown();
+	ImGui::DestroyContext();
+
+
 
 	return 0;
 

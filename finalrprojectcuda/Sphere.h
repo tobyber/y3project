@@ -66,11 +66,11 @@ public:
 
 
 
-		vec3gpu lightDir = l.Position - hitPoint;
+		vec3gpu lightDir = hitPoint- l.Position;
 		lightDir.normalise();
 
 
-		vec3gpu normal = (hitPoint - this->Center);
+		vec3gpu normal = (hitPoint-this->Center);
 
 		normal.normalise();
 
@@ -111,7 +111,7 @@ public:
 		float max = fmaxf(colX, colY);
 		max = fmaxf(max, colZ);
 		max = 1.0f;
-		//if (max != 0.0)
+		if (max != 0.0)
 		{
 			max = 1.0 / max;
 

@@ -450,9 +450,9 @@ public:
 
 
 				float4 newCol = this->Spheres[hitSphereNew]->colourSphere(newhitPoint, cameraPos, l1);
-				col.x += newCol.x * 0.15;
-				col.y += newCol.y * 0.15;
-				col.z += newCol.z * 0.15;
+				//col.x += newCol.x * 0.15;
+				//col.y += newCol.y * 0.15;
+				//col.z += newCol.z * 0.15;
 
 
 			}

@@ -41,7 +41,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>C:\Users\Toby Bernard\source\repos\finalrprojectcuda\finalrprojectcuda;C:\Users\Toby Bernard\source\repos\finalrprojectcuda\finalrprojectcuda\shaders;C:\Users\Toby Bernard\source\repos\finalrprojectcuda\finalrprojectcuda\glm;C:\Users\Toby Bernard\source\repos\finalrprojectcuda\finalrprojectcuda\GL;$(IncludePath)</IncludePath>
+    <IncludePath>C:\Users\tobyj\source\repos\tobyber\y3project\finalrprojectcuda\imgui;C:\Users\Toby Bernard\source\repos\finalrprojectcuda\finalrprojectcuda;C:\Users\Toby Bernard\source\repos\finalrprojectcuda\finalrprojectcuda\shaders;C:\Users\Toby Bernard\source\repos\finalrprojectcuda\finalrprojectcuda\glm;C:\Users\Toby Bernard\source\repos\finalrprojectcuda\finalrprojectcuda\GL;$(IncludePath)</IncludePath>
     <LibraryPath>C:\Users\tobyj\source\repos\tobyber\y3project\finalrprojectcuda\Libraries;C:\Users\Toby Bernard\source\repos\finalrprojectcuda\finalrprojectcuda\Libraries;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -53,6 +53,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;WIN64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Users\tobyj\source\repos\tobyber\y3project\finalrprojectcuda\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -61,7 +62,7 @@
     </Link>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
-      <Include>C:\Users\Toby Bernard\source\repos\finalrprojectcuda\finalrprojectcuda;C:\Users\tobyj\source\repos\tobyber\y3project\finalrprojectcuda\Libraries;%(Include)</Include>
+      <Include>C:\Users\Toby Bernard\source\repos\finalrprojectcuda\finalrprojectcuda;C:\Users\tobyj\source\repos\tobyber\y3project\finalrprojectcuda\Libraries;C:\Users\tobyj\source\repos\tobyber\y3project\finalrprojectcuda\imgui;%(Include)</Include>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -96,6 +97,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="float4.cpp" />
+    <ClCompile Include="imgui\imgui.cpp" />
+    <ClCompile Include="imgui\imgui_impl_glut.cpp" />
+    <ClCompile Include="imgui\imgui_impl_opengl3.cpp" />
     <ClCompile Include="shaders\Shader.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -111,6 +115,12 @@
     <ClInclude Include="helper_cuda.h" />
     <ClInclude Include="helper_gl.h" />
     <ClInclude Include="helper_string.h" />
+    <ClInclude Include="imgui\imconfig.h" />
+    <ClInclude Include="imgui\imgui.h" />
+    <ClInclude Include="imgui\imgui_impl_glut.h" />
+    <ClInclude Include="imgui\imgui_impl_opengl3.h" />
+    <ClInclude Include="imgui\imgui_impl_opengl3_loader.h" />
+    <ClInclude Include="imgui\imgui_internal.h" />
     <ClInclude Include="Light.h" />
     <ClInclude Include="Model.h" />
     <ClInclude Include="Ray.h" />
