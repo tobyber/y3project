@@ -28,7 +28,7 @@ class Ray
 public:
 	__device__ Ray() {this->dir = vec3gpu();	this->origin = vec3gpu(); }
 	__device__ Ray(vec3gpu origin, vec3gpu direction) {	this->dir = direction;	this->origin = origin;}
-	__device__ Ray( vec3gpu cameraPos,vec3gpu cameraRightDir, float x, float y, float width, float height, float left, float right, float bottom, float top,float zPlane ,vec3gpu gpucamLookAt)
+	__device__ Ray( vec3gpu cameraPos,vec3gpu cameraRightDir, float x, float y, float width, float height)
 	{
 
 		

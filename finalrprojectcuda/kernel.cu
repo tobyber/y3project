@@ -77,9 +77,9 @@ __global__ void addKernel(float4* pos, int screen_width, int screen_height,vec3g
 
 	vec3gpu floor[4] = {
 		vec3gpu(0,1.0,0),
-		vec3gpu(-20, 10, -20),
-		vec3gpu(20, 10, -20),
-		vec3gpu(20, 10, 20),
+		vec3gpu(-20, -10, -20),
+		vec3gpu(20, -10, -20),
+		vec3gpu(20, -10, 20),
 
 	};
 
@@ -104,12 +104,13 @@ __global__ void addKernel(float4* pos, int screen_width, int screen_height,vec3g
 	//w.AddModel(modelTris, modelTrisNo);
 	w.AddModel(background, 1,make_float4(1.0,1.0,1.0,1.0));
 	w.AddModel(background2, 1, make_float4(1.0, 1.0, 1.0, 1.0));
+	w.AddModel(floor, 1, make_float4(0.8, 0.8, 0.8, 1.0));
 	float4 col = make_float4(0.0, 0.0, 0.0, 1.0);
 	
 	float xPos = cameraPos.x;
 	float yPos = cameraPos.y;
 	float zPos = cameraPos.z;
-	Ray r(cameraPos,cameraRightDir, (float)x, (float)y, (float)screen_width, (float)screen_height,cameraPos.x-1.0f,cameraPos.x+1.0f,cameraPos.y-1.0f, cameraPos.y+1.0f,cameraPos.z+1.0f,gpucamLookAt);
+	Ray r(cameraPos,cameraRightDir, (float)x, (float)y, (float)screen_width, (float)screen_height);
 	
 
 
@@ -120,8 +121,12 @@ __global__ void addKernel(float4* pos, int screen_width, int screen_height,vec3g
 		int sphereIntersect = -1;
 		float closestT = 10000;
 		sphereIntersect = w.hitClosestSphere(r, closestT);
-		float modelT = 0;
+		float modelT = 100001;
 		int hitmodel = w.testIntersect(r, l1, hitPoint, hitNormal,modelT);
+		
+		//this logic might be broken... first check to hit instead then check which is closer?
+		//models move backwards and i dont know why..
+
 		if ((modelT < closestT))
 		{
 
@@ -129,22 +134,19 @@ __global__ void addKernel(float4* pos, int screen_width, int screen_height,vec3g
 			{
 			
 
+				if (w.isPointInWorldShadow(hitPoint, l1))
+				{
+					col = make_float4(0.0, 0.0, 0.0, 1.0);
+				}
+				else
+				{
+					float4 newCol = w.colourModel(hitPoint, hitNormal, hitmodel, l1, cameraPos);
+					col.x = newCol.x ;
+					col.y = newCol.y ;
+					col.z = newCol.z;
 
-
-			if (w.isPointInWorldShadow(hitPoint, l1))
-			{
-				col = make_float4(0.0, 0.0, 0.0, 1.0);
-
+				}
 			}
-			else
-			{
-				float4 newCol = w.colourModel(hitPoint, hitNormal, hitmodel, l1);
-				col.x = newCol.x ;
-				col.y = newCol.y ;
-				col.z = newCol.z;
-
-			}
-		}
 
 		}
 
@@ -302,6 +304,20 @@ void display()
 	cudaGraphicsUnmapResources(1, &cuda_tex_resource, 0);
 	
 
+	//ImGui_ImplOpenGL3_NewFrame();
+	//ImGui_ImplGLUT_NewFrame();
+	//ImGui::NewFrame();
+	//ImGui::ShowDemoWindow();
+	//ImGui::Render();
+
+	//glUseProgram(0);
+	
+	//ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+
+
+
+
 	glUseProgram(myShader->GetProgramObjID());
 
 	//bind texture and get the data from pixel unpack buffer
@@ -342,8 +358,12 @@ void display()
 
 //	if (time_f >= 460) time_f = 0;
 	//time_f += 5.0;
+	
+
 	glFlush();
+
 	glutSwapBuffers();
+
 }
 
 
@@ -629,19 +649,19 @@ int main(int argc, char** argv)
 	glutIdleFunc(idle);
 
 
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO();
-	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+	//IMGUI_CHECKVERSION();
+	//ImGui::CreateContext();
+	//ImGuiIO& io = ImGui::GetIO();
+	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
 	
 
 
 	//ImGui::StyleColorsDark();
 	// Setup Platform/Renderer backends
-	ImGui_ImplGLUT_Init();
-	ImGui_ImplOpenGL3_Init();
-	ImGui_ImplGLUT_InstallFuncs();
-
+	//ImGui_ImplGLUT_Init();
+	//ImGui_ImplOpenGL3_Init();
+	//ImGui_ImplGLUT_InstallFuncs();
+	
 
 
 
@@ -655,9 +675,9 @@ int main(int argc, char** argv)
 
 
 
-	ImGui_ImplOpenGL3_Shutdown();
-	ImGui_ImplGLUT_Shutdown();
-	ImGui::DestroyContext();
+	//ImGui_ImplOpenGL3_Shutdown();
+	//ImGui_ImplGLUT_Shutdown();
+	//ImGui::DestroyContext();
 
 
 

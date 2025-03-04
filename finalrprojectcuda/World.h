@@ -196,7 +196,7 @@ public:
 
 
 	//need to pass in cameraPos (or just a new ray)
-	__device__ float4 colourModel(vec3gpu hitPoint, vec3gpu hitNormal, int modelIdx, Light l)
+	__device__ float4 colourModel(vec3gpu hitPoint, vec3gpu hitNormal, int modelIdx, Light l,vec3gpu& camPos)
 	{
 
 		
@@ -205,7 +205,7 @@ public:
 		//only works for 1 light
 
 		
-		vec3gpu lightDir = l.Position - hitPoint;
+		vec3gpu lightDir = hitPoint- l.Position;
 		lightDir.normalise();
 		hitNormal.normalise();
 
@@ -219,13 +219,13 @@ public:
 		reflection = reflection * (hitNormal - lightDir);
 		
 		//need to pass in cam pos
-		vec3gpu camPos(0, 0, 0);
+		//vec3gpu camPos(0, 0, 0);
 		vec3gpu viewDir = camPos - hitPoint;
 
 		viewDir.normalise();
 		
 
-		//make this atbitrary
+		
 		float4 col = this->modelColours[modelIdx];
 		float4 lightdiff = make_float4(lightCol.x * diff, lightCol.y * diff, lightCol.z * diff, 1.0);
 		
@@ -434,7 +434,7 @@ public:
 			if (hitmodelNew != -1)
 			{
 				//float4 newCol = make_float4(0.0, 0.0, 0.0, 1.0);
-				float4 newCol = this->colourModel(newhitPoint, newNormal, hitmodelNew, l1);
+				float4 newCol = this->colourModel(newhitPoint, newNormal, hitmodelNew, l1,cameraPos);
 				col.x += newCol.x * 0.15;
 				col.y += newCol.y * 0.15;
 				col.z += newCol.z * 0.15;
